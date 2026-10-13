@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e2603a">
+<title>Duelo de Sistemas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0 16px 40px; }
+
+  .titulo { text-align: center; margin-top: 5vh; }
+  .titulo h1 { font-family: "Rye", serif; font-size: clamp(40px, 8vw, 92px); margin: 0; color: var(--sol); text-shadow: 5px 5px 0 var(--sombra); letter-spacing: 2px; line-height: 1; }
+  .titulo p { font-size: clamp(22px, 3vw, 30px); color: var(--arena-claro); margin: 10px 0 0; text-shadow: 2px 2px 0 var(--sombra); }
+
+  /* Escena: dos siluetas al atardecer */
+  .escena { width: min(720px, 100%); margin: 2vh 0 0; }
+  .escena svg { width: 100%; height: auto; display: block; }
+  .silueta { fill: #2b1a0e; }
+  .sol { animation: latido 3s ease-in-out infinite; transform-origin: 360px 150px; transform-box: view-box; }
+  @keyframes latido { 50% { transform: scale(1.04); } }
+  .rodadora { animation: rodar 9s linear infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes rodar { from { transform: translateX(-80px) rotate(0); } to { transform: translateX(820px) rotate(720deg); } }
+
+  .tarjeta { width: min(720px, 100%); background: var(--papel); border: 6px double var(--madera); box-shadow: 10px 10px 0 var(--sombra); padding: 22px clamp(16px, 4vw, 34px); margin-top: -6px; position: relative; }
+
+  .boton { display: block; width: 100%; text-align: center; text-decoration: none; font-family: "Rye", serif; font-size: 24px; padding: 16px 12px; border: 3px solid var(--tinta); color: #fff; box-shadow: 5px 5px 0 var(--tinta); transition: transform .08s; }
+  .boton small { display: block; font-family: "VT323", monospace; font-size: 21px; opacity: .9; margin-top: 2px; }
+  .boton:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--tinta); }
+  .boton:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--tinta); }
+  .boton.primario { background: var(--rojo); }
+  
+  h2 { font-family: "Rye", serif; font-size: 24px; margin: 26px 0 10px; border-bottom: 3px dashed var(--madera); padding-bottom: 4px; }
+  .reglas { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .reglas li { font-size: 23px; line-height: 1.15; display: grid; grid-template-columns: 36px 1fr; align-items: start; }
+
+  code { background: #2b1a0e; color: var(--sol); padding: 1px 6px; font-family: "VT323", monospace; }
+
+  footer { margin-top: 26px; color: var(--arena-claro); font-size: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="titulo">
+  <h1>Duelo de Sistemas</h1>
+  <p>Dos vaqueros. Una pregunta. Solo uno desenfunda primero.</p>
+</div>
+
+<div class="escena" aria-hidden="true">
+  <svg viewBox="0 0 720 260">
+    <circle class="sol" cx="360" cy="150" r="90" fill="#ffd34d" opacity=".9"/>
+    <path d="M0 210 L120 180 L200 196 L310 170 L420 192 L540 168 L640 188 L720 176 L720 260 L0 260Z" fill="#c4703a" opacity=".7"/>
+    <rect x="0" y="222" width="720" height="38" fill="#d9a15b"/>
+    <!-- cactus -->
+    <path class="silueta" d="M360 222 v-58 a8 8 0 0 1 16 0 v58Z M360 196 h-14 v-18 a6 6 0 0 1 12 0 v8 h2Z M376 188 h12 v-14 a6 6 0 0 1 12 0 v20 h-24Z" opacity=".85"/>
+    <!-- vaquero izquierdo -->
+    <g class="silueta" transform="translate(120 112)">
+      <rect x="-22" y="0" width="58" height="6" rx="3"/>
+      <rect x="-8" y="-20" width="30" height="22" rx="6"/>
+      <rect x="-3" y="4" width="22" height="22" rx="5"/>
+      <rect x="-6" y="26" width="30" height="48" rx="4"/>
+      <rect x="20" y="34" width="44" height="9" rx="4"/>
+      <rect x="60" y="30" width="20" height="6"/>
+      <rect x="-14" y="30" width="9" height="34" rx="4"/>
+      <rect x="-4" y="72" width="11" height="40"/>
+      <rect x="11" y="72" width="11" height="40"/>
+    </g>
+    <!-- vaquero derecho (espejado) -->
+    <g class="silueta" transform="translate(600 112) scale(-1 1)">
+      <rect x="-22" y="0" width="58" height="6" rx="3"/>
+      <rect x="-8" y="-20" width="30" height="22" rx="6"/>
+      <rect x="-3" y="4" width="22" height="22" rx="5"/>
+      <rect x="-6" y="26" width="30" height="48" rx="4"/>
+      <rect x="20" y="34" width="44" height="9" rx="4"/>
+      <rect x="60" y="30" width="20" height="6"/>
+      <rect x="-14" y="30" width="9" height="34" rx="4"/>
+      <rect x="-4" y="72" width="11" height="40"/>
+      <rect x="11" y="72" width="11" height="40"/>
+    </g>
+    <!-- planta rodadora -->
+    <g class="rodadora">
+      <circle cx="0" cy="210" r="11" fill="none" stroke="#7a4a2a" stroke-width="3" stroke-dasharray="5 3"/>
+      <circle cx="0" cy="210" r="6" fill="none" stroke="#7a4a2a" stroke-width="2" stroke-dasharray="3 3"/>
+    </g>
+  </svg>
+</div>
+
+<main class="tarjeta">
+  <a class="boton primario" href="host.html">Iniciar duelo<small>Se genera un QR para que dos jugadores se unan desde su teléfono</small></a>
+
+  <h2>Cómo se juega</h2>
+  <ul class="reglas">
+    <li><span>📱</span><span>Abre el duelo en la PC. Cada jugador escanea el QR con su teléfono.</span></li>
+    <li><span>❓</span><span>Sale una pregunta de sistemas con 4 respuestas. Tienes 15 segundos.</span></li>
+    <li><span>🔫</span><span>Si aciertas y tu rival no, le disparas y pierde una vida.</span></li>
+    <li><span>🤝</span><span>Si ambos aciertan es empate. Si nadie acierta, pasa la siguiente.</span></li>
+    <li><span>❤️</span><span>Cada vaquero tiene 3 vidas. El último en pie gana.</span></li>
+  </ul>
+
+</main>
+
+<footer>Juego multijugador · temática de sistemas</footer>
+
+</body>
+</html>

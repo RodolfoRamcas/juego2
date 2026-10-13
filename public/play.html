@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#e2603a">
+<title>Control de Vaquero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; padding: 16px; gap: 12px; user-select: none; }
+  .vista { display: none; flex: 1; flex-direction: column; gap: 12px; }
+  .vista.activa { display: flex; }
+  h1 { font-family: "Rye", serif; color: var(--sol); text-shadow: 3px 3px 0 var(--sombra); margin: 8px 0; text-align: center; font-size: 30px; }
+  .panel { background: var(--papel); border: 5px double var(--madera); padding: 16px; box-shadow: 6px 6px 0 var(--sombra); }
+  .panel p { font-size: 24px; margin: 4px 0; text-align: center; }
+  input { width: 100%; font-family: "VT323", monospace; font-size: 30px; padding: 8px 12px; border: 3px solid var(--tinta); background: #fff8e6; }
+  .boton { width: 100%; font-family: "Rye", serif; font-size: 24px; padding: 14px; border: 3px solid var(--tinta); background: var(--rojo); color: #fff; box-shadow: 4px 4px 0 var(--tinta); }
+  .boton:active { translate: 3px 3px; box-shadow: 1px 1px 0 var(--tinta); }
+  .error { color: var(--rojo); font-size: 22px; text-align: center; min-height: 26px; }
+
+  #barra { display: flex; justify-content: space-between; align-items: center; font-family: "Rye", serif; color: var(--arena-claro); text-shadow: 2px 2px 0 var(--sombra); font-size: 20px; }
+  #corazones { font-size: 24px; letter-spacing: 3px; }
+  #temaPregunta { text-align: center; font-size: 19px; color: var(--rojo); text-transform: uppercase; letter-spacing: 1px; }
+  #textoPregunta { font-family: "Rye", serif; font-size: 19px; line-height: 1.25; text-align: center; }
+  #tiempo { height: 10px; background: #d9c39a; border: 2px solid var(--tinta); margin-top: 10px; overflow: hidden; }
+  #tiempo div { height: 100%; background: var(--rojo); width: 100%; }
+
+  #opciones { flex: 1; display: grid; grid-template-rows: repeat(4, 1fr); gap: 10px; min-height: 0; }
+  .opcion { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 3px solid var(--tinta); color: #fff; font-family: "VT323", monospace; font-size: 25px; text-align: left; box-shadow: 4px 4px 0 var(--tinta); transition: opacity .2s, transform .1s; }
+  .opcion b { font-family: "Rye", serif; font-size: 30px; width: 38px; flex: none; text-align: center; }
+  .opcion:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--tinta); }
+  #opciones.bloqueado .opcion { opacity: .35; pointer-events: none; }
+  #opciones.bloqueado .opcion.elegida { opacity: 1; outline: 5px solid var(--sol); }
+  .opcion.correcta { outline: 5px solid #7cff6b !important; opacity: 1 !important; }
+
+  .grande { font-family: "Rye", serif; font-size: 34px; text-align: center; color: var(--sol); text-shadow: 3px 3px 0 var(--sombra); margin: auto 0; }
+  .grande small { display: block; font-family: "VT323", monospace; font-size: 26px; color: var(--arena-claro); margin-top: 10px; text-shadow: none; }
+</style>
+</head>
+<body>
+
+<section class="vista activa" id="vUnirse">
+  <h1>🤠 Duelo de Sistemas</h1>
+  <div class="panel">
+    <p>¿Cómo te llamas, forastero?</p>
+    <input id="nombre" maxlength="14" placeholder="Tu nombre" autocomplete="off">
+    <p style="margin-top:12px">Sala</p>
+    <input id="sala" maxlength="4" placeholder="ABCD" style="text-transform:uppercase; text-align:center; letter-spacing:6px">
+  </div>
+  <button class="boton" id="btnUnirse">Entrar al duelo</button>
+  <div class="error" id="error"></div>
+</section>
+
+<section class="vista" id="vEspera">
+  <div class="grande" id="msgEspera">Esperando al otro vaquero…<small>Mira la pantalla principal</small></div>
+</section>
+
+<section class="vista" id="vJuego">
+  <div id="barra"><span id="miNombre"></span><span id="corazones"></span></div>
+  <div class="panel">
+    <div id="temaPregunta"></div>
+    <div id="textoPregunta"></div>
+    <div id="tiempo"><div></div></div>
+  </div>
+  <div id="opciones"></div>
+  <div class="error" id="feedback" style="color:var(--arena-claro); font-size:26px"></div>
+</section>
+
+<section class="vista" id="vFin">
+  <div class="grande" id="msgFin"></div>
+  <button class="boton" id="btnRevancha">Revancha</button>
+</section>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="red.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const LETRAS = ["A", "B", "C", "D"];
+const COLORES = ["var(--opA)", "var(--opB)", "var(--opC)", "var(--opD)"];
+const params = new URLSearchParams(location.search);
+
+// Token persistente por pestaña para poder reconectar sin perder el lugar.
+let token;
+try { token = sessionStorage.getItem("token") || crypto.randomUUID(); sessionStorage.setItem("token", token); }
+catch { token = Math.random().toString(36).slice(2); }
+let guardado = {};
+try { guardado = JSON.parse(localStorage.getItem("vaquero") || "{}"); } catch {}
+
+$("#sala").value = params.get("sala") || "";
+$("#nombre").value = guardado.nombre || "";
+
+const socket = conectarJugador();
+let miSlot = null, unido = false, respondido = false;
+
+function vista(id) {
+  document.querySelectorAll(".vista").forEach((v) => v.classList.toggle("activa", v.id === id));
+}
+
+async function unirse() {
+  const nombre = $("#nombre").value.trim();
+  const sala = $("#sala").value.trim().toUpperCase();
+  if (!nombre) return ($("#error").textContent = "Escribe tu nombre");
+  if (sala.length !== 4) return ($("#error").textContent = "El código de sala tiene 4 letras");
+  try { localStorage.setItem("vaquero", JSON.stringify({ nombre })); } catch {}
+  $("#error").textContent = "";
+  $("#btnUnirse").textContent = "Conectando…";
+  try { await socket.conectar(sala); }
+  catch { $("#btnUnirse").textContent = "Entrar al duelo"; return; }
+  socket.emit("unirse", { nombre, token }, (r) => {
+    $("#btnUnirse").textContent = "Entrar al duelo";
+    if (r.error) return ($("#error").textContent = r.error);
+    miSlot = r.slot; unido = true;
+    $("#miNombre").textContent = r.nombre;
+    $("#miNombre").style.color = miSlot ? "#8fb8ff" : "#ff9a8f";
+    vista("vEspera");
+  });
+}
+$("#btnUnirse").onclick = unirse;
+
+socket.on("conexion:error", (msg) => {
+  $("#btnUnirse").textContent = "Entrar al duelo";
+  if (!unido) { vista("vUnirse"); $("#error").textContent = msg; }
+});
+// Si se cae la conexión a mitad de partida, reintenta y recupera su lugar con el mismo token.
+socket.on("conexion:perdida", () => {
+  if (!unido) return;
+  vista("vEspera");
+  $("#msgEspera").innerHTML = "Reconectando…<small>No cierres esta pestaña</small>";
+  setTimeout(unirse, 1500);
+});
+
+socket.on("sala", (s) => {
+  const yo = s.jugadores[miSlot];
+  if (yo) $("#corazones").textContent = "❤️".repeat(Math.max(0, yo.vidas)) + "🖤".repeat(3 - Math.max(0, yo.vidas));
+  if (s.estado === "lobby") vista("vEspera");
+});
+
+socket.on("cuenta", () => {
+  vista("vEspera");
+  $("#msgEspera").innerHTML = "¡Prepárate!<small>El duelo comienza…</small>";
+});
+
+socket.on("pregunta", (p) => {
+  vista("vJuego");
+  respondido = !!p.yaRespondio;
+  $("#textoPregunta").textContent = p.q;
+  $("#temaPregunta").textContent = p.tema || "";
+  $("#feedback").textContent = respondido ? "Respuesta enviada" : "";
+  const cont = $("#opciones");
+  cont.className = respondido ? "bloqueado" : "";
+  cont.innerHTML = "";
+  p.o.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.className = "opcion";
+    b.style.background = COLORES[i];
+    b.innerHTML = `<b>${LETRAS[i]}</b><span></span>`;
+    b.querySelector("span").textContent = t;
+    b.onclick = () => responder(i, b);
+    cont.appendChild(b);
+  });
+  const barra = $("#tiempo div");
+  barra.style.transition = "none";
+  barra.style.width = "100%";
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    barra.style.transition = `width ${p.tiempo}s linear`;
+    barra.style.width = "0%";
+  }));
+});
+
+function responder(i, boton) {
+  if (respondido) return;
+  respondido = true;
+  socket.emit("responder", { opcion: i });
+  boton.classList.add("elegida");
+  $("#opciones").className = "bloqueado";
+  $("#feedback").textContent = "¡Disparo cargado! Esperando…";
+  navigator.vibrate?.(30);
+}
+
+socket.on("resultado", (r) => {
+  const barra = $("#tiempo div");
+  barra.style.transition = "none";
+  $("#opciones").className = "bloqueado";
+  $("#opciones").children[r.correcta]?.classList.add("correcta");
+  const mia = r.respuestas[miSlot];
+  let txt;
+  if (r.resultado === "empate") txt = "🤝 Empate: ambos acertaron";
+  else if (r.resultado === "nadie") txt = "🌵 Nadie acertó";
+  else if (r.perdedor === miSlot) { txt = mia === null ? "💥 ¡Te dispararon! (no respondiste)" : "💥 ¡Te dispararon!"; navigator.vibrate?.([200, 80, 200]); }
+  else txt = "🔫 ¡Le diste!";
+  $("#feedback").textContent = txt;
+});
+
+socket.on("fin", ({ ganador }) => {
+  vista("vFin");
+  $("#msgFin").innerHTML = ganador === miSlot ? "🏆 ¡Ganaste el duelo!<small>Eres el más rápido del oeste</small>" : "☠️ Mordiste el polvo<small>Será la próxima, vaquero</small>";
+});
+
+$("#btnRevancha").onclick = () => socket.emit("revancha");
+
+socket.on("cerrada", () => {
+  unido = false;
+  vista("vUnirse");
+  $("#error").textContent = "La pantalla principal se cerró. Escanea el nuevo QR.";
+});
+</script>
+</body>
+</html>

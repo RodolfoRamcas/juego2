@@ -1,0 +1,7 @@
+{
+  // Live Server sirve la carpeta public/, así abre index.html en lugar de listar el proyecto.
+  "liveServer.settings.root": "/public",
+  // Abre el navegador con la IP de la red (ej. http://192.168.1.90:5500) en vez de 127.0.0.1,
+  // para que el QR apunte a una dirección a la que el teléfono sí puede llegar.
+  "liveServer.settings.useLocalIp": true
+}

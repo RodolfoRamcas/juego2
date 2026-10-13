@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duelo de Sistemas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  body { overflow: hidden; height: 100vh; }
+  #escena { position: relative; height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+
+  header { text-align: center; padding: 14px 0 0; }
+  header h1 { font-family: "Rye", serif; font-size: clamp(28px, 4vw, 52px); margin: 0; color: var(--sol); text-shadow: 3px 3px 0 var(--sombra); letter-spacing: 2px; }
+  header .ronda { font-family: "VT323", monospace; font-size: 24px; color: var(--arena-claro); }
+
+  #arena { position: relative; display: grid; grid-template-columns: 1fr minmax(380px, 46vw) 1fr; align-items: end; padding: 0 3vw; }
+  .vaquero { position: relative; display: flex; flex-direction: column; align-items: center; justify-self: center; margin-bottom: 4vh; }
+  .vaquero .nombre { font-family: "Rye", serif; font-size: clamp(18px, 2vw, 28px); color: var(--arena-claro); text-shadow: 2px 2px 0 var(--sombra); }
+  .vaquero .vidas { font-size: clamp(26px, 3vw, 40px); letter-spacing: 6px; min-height: 1.2em; }
+  .vaquero .vidas span { display: inline-block; transition: transform .4s, opacity .4s, filter .4s; }
+  .vaquero .vidas span.perdida { filter: grayscale(1); opacity: .25; transform: scale(.7); }
+  .vaquero svg { width: clamp(150px, 16vw, 240px); height: auto; overflow: visible; }
+  .vaquero.derecha svg { transform: scaleX(-1); }
+  .vaquero .estado { font-family: "VT323", monospace; font-size: 26px; height: 30px; color: var(--sol); }
+  .vaquero.desconectado { opacity: .35; }
+
+  .vaquero.dispara .brazo { animation: retroceso .35s; }
+  .vaquero.dispara .fogonazo { animation: fogonazo .25s; }
+  .vaquero.herido svg { animation: herido .6s; }
+  .vaquero.caido svg { transform-origin: 50% 100%; animation: caer 1s forwards; }
+  .vaquero.derecha.caido svg { animation-name: caerDer; }
+  @keyframes retroceso { 30% { transform: rotate(-14deg); } }
+  @keyframes fogonazo { 0%,100% { opacity: 0; } 20% { opacity: 1; } }
+  @keyframes herido { 0%,100% { translate: 0; filter: none; } 20% { translate: -12px; filter: brightness(2) sepia(1) hue-rotate(-40deg) saturate(6); } 50% { translate: 8px; } }
+  @keyframes caer { to { transform: rotate(-90deg) translateY(20px); opacity: .6; } }
+  @keyframes caerDer { from { transform: scaleX(-1); } to { transform: scaleX(-1) rotate(-90deg) translateY(20px); opacity: .6; } }
+  .brazo { transform-origin: 62px 78px; transform-box: view-box; }
+
+  /* Cartel de la pregunta */
+  #cartel { align-self: center; background: var(--papel); color: var(--tinta); border: 6px double var(--madera); border-radius: 6px; padding: 22px 26px 18px; box-shadow: 10px 10px 0 var(--sombra); position: relative; }
+  #cartel .etiqueta { position: absolute; top: -18px; left: 50%; translate: -50%; background: var(--madera); color: var(--sol); font-family: "Rye", serif; padding: 2px 16px; font-size: 18px; white-space: nowrap; }
+  #cartel .pregunta { font-family: "Rye", serif; font-size: clamp(20px, 2vw, 30px); line-height: 1.25; margin: 6px 0 16px; text-align: center; min-height: 2.5em; }
+  #cartel .ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .op { display: flex; align-items: center; gap: 10px; border: 3px solid var(--tinta); padding: 8px 10px; font-family: "VT323", monospace; font-size: clamp(20px, 1.7vw, 28px); background: #fff8e6; position: relative; transition: background .3s, opacity .3s; }
+  .op b { display: grid; place-items: center; width: 34px; height: 34px; flex: none; color: #fff; font-family: "Rye", serif; font-size: 18px; }
+  .op.correcta { background: #b9e6a1; border-color: #2e6b1a; }
+  .op.incorrecta { opacity: .45; }
+  .op .marcas { position: absolute; right: 6px; top: -12px; display: flex; gap: 4px; }
+  .op .marcas i { font-style: normal; font-size: 13px; color: #fff; padding: 1px 6px; border-radius: 10px; font-family: "VT323", monospace; font-size: 18px; }
+  #timer { height: 12px; background: #d9c39a; border: 2px solid var(--tinta); margin-top: 16px; overflow: hidden; }
+  #timer div { height: 100%; background: var(--rojo); width: 100%; }
+  #veredicto { text-align: center; font-family: "Rye", serif; font-size: 26px; min-height: 36px; margin-top: 10px; color: var(--madera); }
+  .ia-tag { position: absolute; right: 10px; bottom: 6px; font-family: "VT323", monospace; font-size: 16px; color: #8a6d45; }
+
+  #suelo { height: 9vh; background: repeating-linear-gradient(90deg, var(--arena) 0 40px, var(--arena-osc) 40px 44px); border-top: 4px solid var(--arena-osc); }
+
+  /* Superposiciones */
+  .capa { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(30, 15, 5, .82); z-index: 10; }
+  .capa[hidden] { display: none; }
+  .tarjeta { background: var(--papel); color: var(--tinta); border: 6px double var(--madera); padding: 26px 34px; text-align: center; max-width: 92vw; box-shadow: 12px 12px 0 #000a; }
+  .tarjeta h2 { font-family: "Rye", serif; font-size: clamp(28px, 4vw, 48px); margin: 0 0 6px; }
+  .tarjeta p { font-family: "VT323", monospace; font-size: 24px; margin: 6px 0; }
+  #lobby .fila { display: flex; gap: 34px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  #qr { width: min(300px, 60vw); border: 4px solid var(--tinta); background: var(--papel); transition: opacity .3s; }
+  #qr img, #qr canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+  .sinQR { aspect-ratio: 1; display: grid; place-content: center; text-align: center; padding: 20px; font-family: "Rye", serif; font-size: 22px; line-height: 1.3; color: var(--rojo); }
+  .tarjeta code { background: var(--tinta); color: var(--sol); padding: 0 6px; }
+  #codigo { font-family: "Rye", serif; font-size: 54px; letter-spacing: 8px; color: var(--rojo); }
+  .slots { display: grid; gap: 10px; text-align: left; min-width: 240px; }
+  .slot { font-family: "VT323", monospace; font-size: 28px; border: 3px dashed var(--madera); padding: 6px 12px; }
+  .slot.listo { border-style: solid; background: #e8f5d8; }
+  #url { font-size: 20px !important; word-break: break-all; color: #6b4a26; }
+  #cuenta { font-family: "Rye", serif; font-size: 22vh; color: var(--sol); text-shadow: 8px 8px 0 var(--sombra); }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 5; }
+  #flash.on { animation: flash .35s; }
+  @keyframes flash { 10% { opacity: .8; } }
+</style>
+</head>
+<body>
+<div id="escena">
+  <header>
+    <h1>Duelo de Sistemas</h1>
+    <div class="ronda" id="ronda">&nbsp;</div>
+  </header>
+
+  <div id="arena">
+    <div class="vaquero izquierda" id="v0">
+      <div class="nombre">—</div>
+      <div class="vidas"></div>
+      <div class="estado"></div>
+      <svg viewBox="0 0 120 170" style="--bandana: var(--p1)"></svg>
+    </div>
+
+    <div id="cartel">
+      <div class="etiqueta" id="tema">SE BUSCA RESPUESTA</div>
+      <div class="pregunta" id="pregunta">Esperando vaqueros…</div>
+      <div class="ops" id="ops"></div>
+      <div id="timer"><div></div></div>
+      <div id="veredicto"></div>
+      <span class="ia-tag" id="iaTag"></span>
+    </div>
+
+    <div class="vaquero derecha" id="v1">
+      <div class="nombre">—</div>
+      <div class="vidas"></div>
+      <div class="estado"></div>
+      <svg viewBox="0 0 120 170" style="--bandana: var(--p2)"></svg>
+    </div>
+  </div>
+
+  <div id="suelo"></div>
+</div>
+
+<div class="capa" id="lobby">
+  <div class="tarjeta">
+    <h2>¡Escanea para unirte!</h2>
+    <div class="fila">
+      <div id="qr" role="img" aria-label="Código QR para unirse"></div>
+      <div>
+        <p>Código de sala</p>
+        <div id="codigo">····</div>
+        <div class="slots">
+          <div class="slot" id="s0">🤠 Vaquero 1: esperando…</div>
+          <div class="slot" id="s1">🤠 Vaquero 2: esperando…</div>
+        </div>
+      </div>
+    </div>
+    <p id="url"></p>
+    <p id="iaInfo">Abriendo sala…</p>
+    <p><a href="index.html" style="color: var(--madera)">← Volver al inicio</a></p>
+  </div>
+</div>
+
+<div class="capa" id="capaCuenta" hidden><div id="cuenta">3</div></div>
+
+<div class="capa" id="capaFin" hidden>
+  <div class="tarjeta">
+    <h2 id="ganador">¡Gana!</h2>
+    <p>El otro vaquero mordió el polvo.</p>
+    <p>Pulsa <b>Revancha</b> en cualquier teléfono.</p>
+  </div>
+</div>
+
+<div id="flash"></div>
+
+<!-- Vaquero (mira a la derecha; el de la derecha se espeja con CSS) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="vaquero-svg">
+      <ellipse cx="60" cy="166" rx="34" ry="4" fill="#0004"/>
+      <!-- piernas -->
+      <rect x="44" y="112" width="12" height="46" fill="#3b4a6b"/>
+      <rect x="62" y="112" width="12" height="46" fill="#334160"/>
+      <rect x="40" y="154" width="18" height="10" rx="2" fill="#4a2a12"/>
+      <rect x="60" y="154" width="18" height="10" rx="2" fill="#4a2a12"/>
+      <!-- cuerpo -->
+      <rect x="40" y="66" width="38" height="50" rx="4" fill="#a0622d"/>
+      <rect x="40" y="106" width="38" height="7" fill="#3a2410"/>
+      <rect x="55" y="106" width="8" height="7" fill="#e3b341"/>
+      <polygon points="40,66 59,66 52,96 40,96" fill="#8a5224"/>
+      <!-- brazo trasero -->
+      <rect x="32" y="70" width="10" height="34" rx="4" fill="#8a5224"/>
+      <!-- cabeza -->
+      <rect x="49" y="56" width="20" height="10" fill="#d9a066"/>
+      <rect x="45" y="34" width="28" height="26" rx="5" fill="#e8b27c"/>
+      <rect x="62" y="44" width="4" height="4" fill="#2b1a0e"/>
+      <rect x="56" y="53" width="12" height="2" fill="#7a4a2a"/>
+      <!-- bandana -->
+      <polygon points="45,58 75,58 62,72" style="fill: var(--bandana)"/>
+      <!-- sombrero -->
+      <rect x="30" y="32" width="58" height="6" rx="3" fill="#5b3a1e"/>
+      <rect x="44" y="14" width="30" height="20" rx="6" fill="#6e4625"/>
+      <rect x="44" y="26" width="30" height="4" fill="#2b1a0e"/>
+      <!-- brazo con revólver -->
+      <g class="brazo">
+        <rect x="58" y="72" width="40" height="11" rx="4" fill="#a0622d"/>
+        <rect x="95" y="72" width="9" height="11" rx="3" fill="#e8b27c"/>
+        <rect x="100" y="68" width="22" height="7" fill="#555"/>
+        <rect x="100" y="74" width="7" height="11" fill="#3a2410"/>
+        <g class="fogonazo" opacity="0">
+          <polygon points="122,71 142,58 136,71 148,72 136,76 142,88 122,75" fill="#ffd34d"/>
+          <circle cx="126" cy="72" r="5" fill="#fff"/>
+        </g>
+      </g>
+    </g>
+  </defs>
+</svg>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="banco.js"></script>
+<script src="red.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const LETRAS = ["A", "B", "C", "D"];
+const COLORES = ["var(--opA)", "var(--opB)", "var(--opC)", "var(--opD)"];
+const socket = crearSalaHost();
+let sala = null, pregunta = null, codigo = null;
+// Se copia el dibujo (no <use>) para que las animaciones CSS lleguen al brazo.
+document.querySelectorAll(".vaquero svg").forEach((s) => (s.innerHTML = $("#vaquero-svg").outerHTML.replace(` id="vaquero-svg"`, "")));
+
+// El QR apunta a la misma dirección con la que se abrió esta página (Vercel, o la IP de la red
+// que usa Live Server). Solo si se abrió como localhost/127.0.0.1 hay que buscar la IP real:
+// "npm run dev" la expone en api/red; si no existe, no se muestra un QR que no serviría.
+const esLocal = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+let ipRed = null;
+const listoIp = !esLocal
+  ? Promise.resolve()
+  : fetch("api/red").then((r) => r.json()).then((d) => (ipRed = d.ip)).catch(() => {});
+
+function urlJugador() {
+  const url = new URL("play.html", location.href);
+  url.search = "?sala=" + codigo;
+  if (esLocal && ipRed) url.hostname = ipRed;
+  return url.href;
+}
+
+async function pintarQR() {
+  if (!codigo) return;
+  await listoIp;
+  $("#qr").innerHTML = "";
+  if (esLocal && !ipRed) {
+    $("#qr").innerHTML = `<div class="sinQR">Abre el juego con "Go Live" para que el teléfono pueda entrar</div>`;
+    $("#url").textContent = `(se abrió como ${location.host}, una dirección que solo existe en esta PC)`;
+    return;
+  }
+  const url = urlJugador();
+  new QRCode($("#qr"), { text: url, width: 280, height: 280, colorDark: "#2b1a0e", colorLight: "#f4e4c1", correctLevel: QRCode.CorrectLevel.M });
+  $("#url").textContent = url;
+}
+
+socket.on("creada", (d) => {
+  codigo = d.codigo;
+  $("#codigo").textContent = codigo;
+  $("#iaInfo").textContent = "🤖 Preparando preguntas con IA…";
+  pintarQR();
+});
+const TEXTO_IA = {
+  activa: "🤖 Preguntas generadas con IA",
+  "sin-api": "📚 Banco local: la IA solo funciona publicado en Vercel o con \"npm run dev\"",
+  error: "📚 Banco local por ahora: la IA no respondió, se reintentará",
+};
+socket.on("ia", (estado) => ($("#iaInfo").textContent = TEXTO_IA[estado]));
+socket.on("error", ({ mensaje }) => ($("#iaInfo").textContent = "⚠️ " + mensaje));
+
+socket.on("sala", (s) => {
+  sala = s;
+  s.jugadores.forEach((j, i) => {
+    const v = $("#v" + i);
+    v.querySelector(".nombre").textContent = j ? j.nombre : "—";
+    v.classList.toggle("desconectado", !j || !j.conectado);
+    const vidas = v.querySelector(".vidas");
+    const max = 3;
+    vidas.innerHTML = j ? Array.from({ length: max }, (_, k) => `<span class="${k >= j.vidas ? "perdida" : ""}">❤️</span>`).join("") : "";
+    const slot = $("#s" + i);
+    slot.textContent = `🤠 Vaquero ${i + 1}: ${j ? j.nombre : "esperando…"}`;
+    slot.classList.toggle("listo", !!j);
+    if (s.estado !== "fin") v.classList.remove("caido");
+  });
+  $("#lobby").hidden = s.estado !== "lobby";
+  $("#ronda").textContent = s.ronda ? `Ronda ${s.ronda}` : " ";
+  if (s.estado === "cuenta") $("#capaFin").hidden = true;
+});
+
+socket.on("cuenta", ({ segundos }) => {
+  const capa = $("#capaCuenta");
+  capa.hidden = false;
+  let n = segundos;
+  $("#cuenta").textContent = n;
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(iv); $("#cuenta").textContent = "¡DESENFUNDEN!"; $("#cuenta").style.fontSize = "10vh"; setTimeout(() => { capa.hidden = true; $("#cuenta").style.fontSize = ""; }, 600); }
+    else $("#cuenta").textContent = n;
+  }, 1000);
+});
+
+socket.on("pregunta", (p) => {
+  pregunta = p;
+  $("#pregunta").textContent = p.q;
+  $("#ops").innerHTML = p.o.map((t, i) => `<div class="op" id="op${i}"><b style="background:${COLORES[i]}">${LETRAS[i]}</b><span>${t}</span><div class="marcas"></div></div>`).join("");
+  $("#veredicto").textContent = "";
+  $("#iaTag").textContent = p.ia ? "🤖 IA" : "📚 Banco";
+  $("#tema").textContent = (p.tema || "Se busca respuesta").toUpperCase();
+  [0, 1].forEach((i) => ($("#v" + i).querySelector(".estado").textContent = "🤔"));
+  const barra = $("#timer div");
+  barra.style.transition = "none";
+  barra.style.width = "100%";
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    barra.style.transition = `width ${p.tiempo}s linear`;
+    barra.style.width = "0%";
+  }));
+});
+
+socket.on("respondio", ({ slot }) => {
+  $("#v" + slot).querySelector(".estado").textContent = "✋ ¡Listo!";
+});
+
+socket.on("resultado", (r) => {
+  const barra = $("#timer div");
+  barra.style.transition = "none";
+  barra.style.width = getComputedStyle(barra).width;
+  document.querySelectorAll(".op").forEach((el, i) => el.classList.add(i === r.correcta ? "correcta" : "incorrecta"));
+  r.respuestas.forEach((op, i) => {
+    const est = $("#v" + i).querySelector(".estado");
+    if (op === null) { est.textContent = "💤 Sin respuesta"; return; }
+    est.textContent = op === r.correcta ? "✅ Correcto" : "❌ Fallo";
+    const nombre = sala?.jugadores[i]?.nombre ?? `J${i + 1}`;
+    $("#op" + op).querySelector(".marcas").insertAdjacentHTML("beforeend", `<i style="background:${i ? "var(--p2)" : "var(--p1)"}">${nombre}</i>`);
+  });
+
+  const nombres = sala.jugadores.map((j) => j.nombre);
+  if (r.resultado === "empate") $("#veredicto").textContent = "¡Empate! Ambos acertaron";
+  else if (r.resultado === "nadie") $("#veredicto").textContent = "Nadie acertó… siguiente pregunta";
+  else {
+    const tirador = 1 - r.perdedor;
+    $("#veredicto").textContent = `¡${nombres[tirador]} dispara a ${nombres[r.perdedor]}!`;
+    disparo(tirador, r.perdedor);
+  }
+});
+
+socket.on("fin", ({ ganador }) => {
+  $("#ganador").textContent = `¡${sala.jugadores[ganador].nombre} gana el duelo!`;
+  $("#v" + (1 - ganador)).classList.add("caido");
+  $("#capaFin").hidden = false;
+});
+
+
+function disparo(tirador, victima) {
+  const t = $("#v" + tirador), v = $("#v" + victima);
+  t.classList.remove("dispara"); v.classList.remove("herido");
+  void t.offsetWidth;
+  t.classList.add("dispara");
+  sonidoDisparo();
+  $("#flash").classList.remove("on"); void $("#flash").offsetWidth; $("#flash").classList.add("on");
+  setTimeout(() => v.classList.add("herido"), 150);
+  setTimeout(() => { t.classList.remove("dispara"); v.classList.remove("herido"); }, 900);
+}
+
+// Disparo sintetizado con WebAudio (ruido + caída de frecuencia).
+let audio;
+function sonidoDisparo() {
+  try {
+    audio ??= new AudioContext();
+    const dur = 0.5, buf = audio.createBuffer(1, audio.sampleRate * dur, audio.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
+    const src = audio.createBufferSource(); src.buffer = buf;
+    const filtro = audio.createBiquadFilter(); filtro.type = "lowpass"; filtro.frequency.setValueAtTime(3000, audio.currentTime); filtro.frequency.exponentialRampToValueAtTime(200, audio.currentTime + dur);
+    const g = audio.createGain(); g.gain.value = 0.9;
+    src.connect(filtro).connect(g).connect(audio.destination); src.start();
+  } catch {}
+}
+document.addEventListener("click", () => (audio ??= new AudioContext()).resume(), { once: true });
+</script>
+</body>
+</html>

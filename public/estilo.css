@@ -1,0 +1,29 @@
+:root {
+  --cielo1: #f7a541;
+  --cielo2: #e2603a;
+  --sol: #ffd34d;
+  --arena: #d9a15b;
+  --arena-claro: #f4e4c1;
+  --arena-osc: #b77d3c;
+  --madera: #5b3a1e;
+  --papel: #f4e4c1;
+  --tinta: #2b1a0e;
+  --sombra: #4a1f0a;
+  --rojo: #b3261e;
+  --p1: #d1342f;
+  --p2: #2f6fd1;
+  --opA: #c0392b;
+  --opB: #2471a3;
+  --opC: #b7950b;
+  --opD: #1e8449;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--tinta);
+  background: linear-gradient(180deg, var(--cielo1) 0%, var(--cielo2) 70%, var(--arena) 70%) fixed;
+  font-family: "VT323", monospace;
+  -webkit-tap-highlight-color: transparent;
+}
