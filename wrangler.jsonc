@@ -1,0 +1,13 @@
+// Configuración para publicar en Cloudflare Workers (npx wrangler deploy).
+// "name" debe coincidir con el Worker ya creado en Cloudflare (juego2.rodolfo-ramirez.workers.dev).
+{
+  "name": "juego2",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  }
+}

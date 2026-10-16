@@ -2,7 +2,7 @@
 
 Duelo de vaqueros de trivia de sistemas. La pantalla principal (PC/TV) muestra el duelo; dos jugadores usan su teléfono como control escaneando un QR.
 
-No necesita un servidor propio: la pantalla principal ejecuta el juego y los teléfonos se conectan a ella por WebRTC ([PeerJS](https://peerjs.com/)). Por eso funciona como sitio estático en Vercel o con Live Server.
+No necesita un servidor propio: la pantalla principal ejecuta el juego y los teléfonos se conectan a ella por WebRTC ([PeerJS](https://peerjs.com/)). Por eso funciona como sitio estático en Vercel, Cloudflare o con Live Server.
 
 ## Estructura
 
@@ -14,6 +14,7 @@ No necesita un servidor propio: la pantalla principal ejecuta el juego y los tel
 | `public/red.js` | Reglas del duelo y conexión entre pantalla y teléfonos |
 | `public/banco.js` | Banco local de preguntas |
 | `api/preguntas.js` | Función de Vercel que pide preguntas a Gemini |
+| `worker.js` + `wrangler.jsonc` | Lo mismo para Cloudflare Workers |
 | `dev.js` | Servidor opcional para probar la IA en tu PC (`npm run dev`) |
 
 ## Publicar en Vercel
@@ -22,9 +23,17 @@ No necesita un servidor propio: la pantalla principal ejecuta el juego y los tel
 2. En **Settings → Environment Variables** agrega `GEMINI_API_KEY` con tu key de https://aistudio.google.com/apikey
 3. Despliega. El QR usará automáticamente la dirección de Vercel.
 
+## Publicar en Cloudflare Workers
+
+1. `npm install`
+2. `npx wrangler secret put GEMINI_API_KEY` y pega tu key.
+3. `npx wrangler deploy`
+
+Si conectaste el repositorio desde el panel de Cloudflare, agrega `GEMINI_API_KEY` como secreto en **Settings → Variables and Secrets** del Worker; el despliegue toma `wrangler.jsonc` solo.
+
 ## Probar en tu PC
 
-- **Live Server:** clic derecho en `public/index.html` → *Open with Live Server*. Usa el banco local (la IA solo está en Vercel o con `npm run dev`).
+- **Live Server:** clic derecho en `public/index.html` → *Open with Live Server*. Usa el banco local (la IA solo está publicada en Vercel/Cloudflare o con `npm run dev`).
 - **Con IA:** pon `GEMINI_API_KEY=...` en un archivo `.env` y ejecuta `npm install` y `npm run dev`.
 
 El QR se arma solo con la IP de tu PC en la red: Live Server abre la página con esa IP (`liveServer.settings.useLocalIp` en `.vscode/settings.json`) y `npm run dev` la detecta. El teléfono debe estar en el mismo Wi-Fi.

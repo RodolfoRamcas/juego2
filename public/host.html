@@ -239,7 +239,7 @@ socket.on("creada", (d) => {
 });
 const TEXTO_IA = {
   activa: "🤖 Preguntas generadas con IA",
-  "sin-api": "📚 Banco local: la IA solo funciona publicado en Vercel o con \"npm run dev\"",
+  "sin-api": "📚 Banco local: la IA no está disponible en este servidor (falta /api/preguntas)",
   error: "📚 Banco local por ahora: la IA no respondió, se reintentará",
 };
 socket.on("ia", (estado) => ($("#iaInfo").textContent = TEXTO_IA[estado]));
